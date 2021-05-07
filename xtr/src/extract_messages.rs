@@ -88,7 +88,20 @@ impl<'a> Extractor<'a> {
         let mut plural: Option<String> = None;
 
         if spec.args.is_empty() {
-            let mut literal = if let Some(TokenTree::Literal(literal)) = token_iter.next() {
+            let mut token;
+            let mut prev_punct = true;
+            loop {
+                token = token_iter.next();
+                match &token {
+                    Some(TokenTree::Punct(punct)) => {
+                        prev_punct = punct.to_string() == ",";
+                    }
+                    Some(TokenTree::Literal(_)) if prev_punct => break,
+                    None => break,
+                    _ => prev_punct = false,
+                }
+            }
+            let mut literal = if let Some(TokenTree::Literal(literal)) = token {
                 literal
             } else {
                 return; // syntax error

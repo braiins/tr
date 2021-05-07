@@ -37,7 +37,8 @@ where
         mod_error: None,
         mod_visitor: visitor,
     };
-    parser.parse_mod(crate_root)
+    let adjacent = crate_root.as_ref().with_extension("").is_dir();
+    parser.parse_mod(crate_root, adjacent)
 }
 
 struct Parser<ModVisitor> {
@@ -51,7 +52,7 @@ impl<ModVisitor> Parser<ModVisitor>
 where
     ModVisitor: FnMut(&PathBuf, &str, &syn::File) -> Result<(), Error>,
 {
-    fn parse_mod<P: AsRef<Path>>(&mut self, mod_path: P) -> Result<(), Error> {
+    fn parse_mod<P: AsRef<Path>>(&mut self, mod_path: P, adjacent: bool) -> Result<(), Error> {
         let mut s = String::new();
         let mut f = File::open(&mod_path)?;
         f.read_to_string(&mut s)?;
@@ -59,7 +60,11 @@ where
         let fi = syn::parse_file(&s)?;
 
         let mut current_path = mod_path.as_ref().into();
-        let mut mod_dir = mod_path.as_ref().parent().unwrap().into();
+        let mut mod_dir = if adjacent {
+            mod_path.as_ref().with_extension("")
+        } else {
+            mod_path.as_ref().parent().unwrap().into()
+        };
 
         swap(&mut self.current_path, &mut current_path);
         swap(&mut self.mod_dir, &mut mod_dir);
@@ -105,7 +110,7 @@ where
                 })) if path.is_ident("path") => {
                     let mod_path = self.mod_dir.join(&s.value());
                     return self
-                        .parse_mod(mod_path)
+                        .parse_mod(mod_path, false)
                         .unwrap_or_else(|err| self.mod_error = Some(err));
                 }
                 _ => {}
@@ -117,13 +122,13 @@ where
         subdir.push("mod.rs");
         if subdir.is_file() {
             return self
-                .parse_mod(subdir)
+                .parse_mod(subdir, false)
                 .unwrap_or_else(|err| self.mod_error = Some(err));
         }
         let adjacent = self.mod_dir.join(&format!("{}.rs", mod_name));
         if adjacent.is_file() {
             return self
-                .parse_mod(adjacent)
+                .parse_mod(adjacent, true)
                 .unwrap_or_else(|err| self.mod_error = Some(err));
         }
 

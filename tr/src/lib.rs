@@ -417,46 +417,52 @@ pub mod internal {
 ///
 #[macro_export]
 macro_rules! tr {
-    ($msgid:tt, $($tail:tt)* ) => {
+    ($msgid:literal, $($tail:tt)* ) => {
         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.translate($msgid, None), $($tail)*))
     };
-    ($msgid:tt) => {
+    ($msgid:literal) => {
         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.translate($msgid, None)))
     };
 
-    ($msgctx:tt => $msgid:tt, $($tail:tt)* ) => {
+    ($msgctx:literal => $msgid:literal, $($tail:tt)* ) => {
          $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.translate($msgid, Some($msgctx)), $($tail)*))
     };
-    ($msgctx:tt => $msgid:tt) => {
+    ($msgctx:literal => $msgid:literal) => {
         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.translate($msgid, Some($msgctx))))
     };
 
-    ($msgid:tt | $plur:tt % $n:expr, $($tail:tt)* ) => {{
+    ($msgid:literal | $plur:literal % $n:expr, $($tail:tt)* ) => {{
         let n = $n;
         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.ntranslate(n as u64, $msgid, $plur, None), $($tail)*, n=n))
     }};
-    ($msgid:tt | $plur:tt % $n:expr) => {{
+    ($msgid:literal | $plur:literal % $n:expr) => {{
         let n = $n;
         $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.ntranslate(n as u64, $msgid, $plur, None), n))
 
     }};
 
-    ($msgctx:tt => $msgid:tt | $plur:tt % $n:expr, $($tail:tt)* ) => {{
+    ($msgctx:literal => $msgid:literal | $plur:literal % $n:expr, $($tail:tt)* ) => {{
          let n = $n;
          $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.ntranslate(n as u64, $msgid, $plur, Some($msgctx)), $($tail)*, n=n))
     }};
-    ($msgctx:tt => $msgid:tt | $plur:tt % $n:expr) => {{
+    ($msgctx:literal => $msgid:literal | $plur:literal % $n:expr) => {{
          let n = $n;
          $crate::internal::with_translator(module_path!(), |t| $crate::runtime_format!(
             t.ntranslate(n as u64, $msgid, $plur, Some($msgctx)), n))
     }};
+    ($translator:expr, $msgid:literal, $($tail:tt)* ) => {
+        $crate::runtime_format!($translator.translate($msgid, None), $($tail)*)
+    };
+    ($translator:expr, $msgid:literal) => {
+        $crate::runtime_format!($translator.translate($msgid, None))
+    };
 }
 
 /// Initialize the translation for a crate, using gettext's bindtextdomain
